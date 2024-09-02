@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,17 +7,42 @@ import {
   Alert,
   TouchableOpacity,
   Linking,
-  Platform,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router"; // Importando o useRouter
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Importando AsyncStorage
 
 export default function SettingsScreen() {
   const [theme, setTheme] = useState("light");
   const [language, setLanguage] = useState("pt-BR");
+  const [token, setToken] = useState(null);
+  const router = useRouter(); // Inicialize o useRouter
+
+  // useEffect(() => {
+  //   const fetchToken = async () => {
+  //     try {
+  //       const token = await AsyncStorage.getItem("access_token");
+  //       setToken(token);
+  //       console.log("Token fetched:", token);
+  //     } catch (error) {
+  //       console.error("Erro ao buscar o token:", error);
+  //     }
+  //   };
+
+  //   fetchToken(); // Chame a função ao montar o componente
+  // }, []);
 
   const handleReportProblem = () => {
     Linking.openURL("https://www.cristianosilvadev.com.br");
+  };
+
+  const handleLogout = async () => {
+    try {
+      await AsyncStorage.removeItem("access_token");
+      router.replace("/(auth)");
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível sair da conta. Tente novamente.");
+    }
   };
 
   return (
@@ -51,13 +76,24 @@ export default function SettingsScreen() {
       </View>
 
       {/* Reportar Problema */}
-      <TouchableOpacity style={styles.buttonReport} onPress={handleReportProblem}>
+      <TouchableOpacity
+        style={styles.buttonReport}
+        onPress={handleReportProblem}
+      >
         <Text style={styles.buttonText}>Reportar Problema</Text>
       </TouchableOpacity>
 
       {/* Excluir Conta */}
       <TouchableOpacity style={[styles.button, styles.deleteButton]}>
         <Text style={styles.buttonText}>Excluir Conta</Text>
+      </TouchableOpacity>
+
+      {/* Botão de Logout */}
+      <TouchableOpacity
+        style={[styles.button, styles.deleteButton]}
+        onPress={handleLogout}
+      >
+        <Text style={styles.buttonText}>Sair</Text>
       </TouchableOpacity>
     </View>
   );

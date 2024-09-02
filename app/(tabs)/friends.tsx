@@ -1,102 +1,291 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform } from 'react-native';
+import React, { useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  Image,
+  FlatList,
+  Button,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { FontAwesome } from "@expo/vector-icons";
+import { Friend, Friendship, UserProps } from "@/types";
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function FriendsPage() {
+  const [receivedRequests, setReceivedRequests] = useState<Friend[]>([]);
+  const [sentRequests, setSentRequests] = useState<Friend[]>([]);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
-export default function TabTwoScreen() {
+  useEffect(() => {
+    fetchFriendRequests();
+    fetchFriends();
+  }, []);
+
+  const fetchFriendRequests = async () => {
+    try {
+      const token = await AsyncStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(`http://192.168.15.72:3333/friendship/requests`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch friend requests");
+      }
+
+      const { receivedRequests, sentRequests } = await res.json();
+      setReceivedRequests(receivedRequests);
+      setSentRequests(sentRequests);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchFriends = async () => {
+    try {
+      const token = await AsyncStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(`http://192.168.15.72:3333/friendship/friends`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch friends");
+      }
+
+      const data = await res.json();
+      setFriends(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUnfriend = async (friendId: string) => {
+    try {
+      const token = await AsyncStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(
+        `http://192.168.15.72:3333/friendship/${friendId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to unfriend");
+      }
+
+      Alert.alert("Amizade desfeita com sucesso!");
+      setFriends((prevFriends) =>
+        prevFriends.filter((friend) => friend.uuid !== friendId)
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleResponse = async (requestId: string, accept: boolean) => {
+    try {
+      const token = await AsyncStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(
+        `http://192.168.15.72:3333/friendship/respond/${requestId}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ accept }),
+        }
+      );
+
+      if (res.ok) {
+        const acceptedRequest = receivedRequests.find(
+          (request) => request.uuid === requestId
+        );
+        if (acceptedRequest) {
+          setFriends((prevFriends) => [...prevFriends, acceptedRequest]);
+        }
+
+        setReceivedRequests((prevRequests) =>
+          prevRequests.filter((request) => request.uuid !== requestId)
+        );
+      } else {
+        console.error("Failed to respond to friend request");
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+
+  const renderFriend = ({ item }: { item: Friend }) => (
+    <View style={styles.friendContainer}>
+      {item.profileImageUrl ? (
+        <Image
+          source={{ uri: item.profileImageUrl }}
+          style={styles.profileImage}
+        />
+      ) : (
+        <FontAwesome name="user" size={48} color="gray" />
+      )}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.friendName}>{item.name}</Text>
+        <Text style={styles.friendEmail}>{item.email}</Text>
+      </View>
+      <Button
+        title="Excluir"
+        color="#ff5c5c"
+        onPress={() => handleUnfriend(item.uuid)}
+      />
+    </View>
+  );
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={<Ionicons size={310} name="code-slash" style={styles.headerImage} />}>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText> library
-          to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <Text style={styles.title}>Amigos</Text>
+
+      <FlatList
+        data={friends}
+        renderItem={renderFriend}
+        keyExtractor={(item) => item.uuid}
+        ListHeaderComponent={
+          <>
+            {/* <SearchFriend /> */}
+            <Text style={styles.subtitle}>
+              Solicitações de Amizade Recebidas
+            </Text>
+            <FlatList
+              data={receivedRequests}
+              renderItem={({ item }) => (
+                <View style={styles.requestContainer}>
+                  <Text>{item.name}</Text>
+                  <Button
+                    title="Aceitar"
+                    onPress={() => handleResponse(item.uuid, true)}
+                  />
+                  <Button
+                    title="Rejeitar"
+                    onPress={() => handleResponse(item.uuid, false)}
+                  />
+                </View>
+              )}
+              keyExtractor={(item) => item.uuid}
+              horizontal
+            />
+            <Text style={styles.subtitle}>
+              Solicitações de Amizade Enviadas
+            </Text>
+            <FlatList
+              data={sentRequests}
+              renderItem={({ item }: { item: Friend }) => (
+                <View style={styles.requestContainer}>
+                  <Text>{item.name}</Text>
+                  <Text>Aguardando resposta...</Text>
+                </View>
+              )}
+              keyExtractor={(item) => item.uuid}
+              horizontal
+            />
+          </>
+        }
+      />
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#f5f5f5",
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 10,
+    marginTop: 40,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 20,
+  },
+  friendContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    marginVertical: 5,
+    backgroundColor: "#fff",
+    borderRadius: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 1,
+    elevation: 2,
+  },
+  profileImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    marginRight: 10,
+  },
+  friendName: {
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  friendEmail: {
+    fontSize: 14,
+    color: "black",
+  },
+  requestContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "#fff",
+    borderRadius: 5,
+    marginHorizontal: 5,
+    marginBottom: 10,
   },
 });
