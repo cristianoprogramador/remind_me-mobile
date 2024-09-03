@@ -1,10 +1,9 @@
-// app\(tabs)\_layout.tsx
+// app/(tabs)/_layout.tsx
 
 import { Tabs } from "expo-router";
 import React from "react";
 
 import { TabBarIcon } from "@/components/navigation/TabBarIcon";
-import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
 
 export default function TabLayout() {
@@ -14,6 +13,14 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
+        tabBarStyle: {
+          height: 60,
+          backgroundColor: "#334155",
+          borderTopWidth: 1,
+          paddingBottom: 10,
+        },
+        tabBarActiveTintColor: "#ffffff",
+        tabBarInactiveTintColor: "#94A3B8",
       }}
     >
       <Tabs.Screen
@@ -55,7 +62,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="friends"
         options={{
-          title: "Friends",
+          title: "Amigos",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               name={focused ? "people" : "people-outline"}
@@ -67,7 +74,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Settings",
+          title: "Configurações",
           tabBarIcon: ({ color, focused }) => (
             <TabBarIcon
               name={focused ? "settings" : "settings-outline"}

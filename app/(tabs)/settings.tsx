@@ -1,36 +1,21 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
-  Button,
-  StyleSheet,
   Alert,
   TouchableOpacity,
+  StyleSheet,
   Linking,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import { useRouter } from "expo-router"; // Importando o useRouter
-import AsyncStorage from "@react-native-async-storage/async-storage"; // Importando AsyncStorage
+import { useRouter } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function SettingsScreen() {
   const [theme, setTheme] = useState("light");
   const [language, setLanguage] = useState("pt-BR");
-  const [token, setToken] = useState(null);
-  const router = useRouter(); // Inicialize o useRouter
-
-  // useEffect(() => {
-  //   const fetchToken = async () => {
-  //     try {
-  //       const token = await AsyncStorage.getItem("access_token");
-  //       setToken(token);
-  //       console.log("Token fetched:", token);
-  //     } catch (error) {
-  //       console.error("Erro ao buscar o token:", error);
-  //     }
-  //   };
-
-  //   fetchToken(); // Chame a função ao montar o componente
-  // }, []);
+  const router = useRouter();
 
   const handleReportProblem = () => {
     Linking.openURL("https://www.cristianosilvadev.com.br");
@@ -46,65 +31,78 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Página de Perfil</Text>
+    <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
+      <View style={styles.container}>
+        <Text style={styles.header}>Configurações</Text>
 
-      {/* Tema */}
-      <View style={styles.pickerContainer}>
-        <Text style={styles.label}>Tema</Text>
-        <Picker
-          selectedValue={theme}
-          onValueChange={(itemValue) => setTheme(itemValue)}
-          style={styles.picker}
+        {/* Tema */}
+        <View style={styles.pickerWrapper}>
+          <Text style={styles.label}>Tema</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={theme}
+              onValueChange={(itemValue) => setTheme(itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Modo Claro" value="light" />
+              <Picker.Item label="Modo Escuro" value="dark" />
+            </Picker>
+          </View>
+        </View>
+
+        {/* Idioma */}
+        <View style={styles.pickerWrapper}>
+          <Text style={styles.label}>Idioma</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={language}
+              onValueChange={(itemValue) => setLanguage(itemValue)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Português (Brasil)" value="pt-BR" />
+              <Picker.Item label="Inglês (EUA)" value="en-US" />
+            </Picker>
+          </View>
+        </View>
+
+        {/* Reportar Problema */}
+        <TouchableOpacity
+          style={styles.buttonReport}
+          onPress={handleReportProblem}
         >
-          <Picker.Item label="Modo Claro" value="light" />
-          <Picker.Item label="Modo Escuro" value="dark" />
-        </Picker>
-      </View>
+          <Text style={styles.buttonText}>Reportar Problema</Text>
+        </TouchableOpacity>
 
-      {/* Idioma */}
-      <View style={styles.pickerContainer}>
-        <Text style={styles.label}>Idioma</Text>
-        <Picker
-          selectedValue={language}
-          onValueChange={(itemValue) => setLanguage(itemValue)}
-          style={styles.picker}
+        {/* Excluir Conta */}
+        <TouchableOpacity style={[styles.button, styles.deleteButton]}>
+          <Text style={styles.buttonText}>Excluir Conta</Text>
+        </TouchableOpacity>
+
+        {/* Botão de Logout */}
+        <TouchableOpacity
+          style={[styles.button, styles.deleteButton]}
+          onPress={handleLogout}
         >
-          <Picker.Item label="Português (Brasil)" value="pt-BR" />
-          <Picker.Item label="Inglês (EUA)" value="en-US" />
-        </Picker>
+          <Text style={styles.buttonText}>Sair</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Reportar Problema */}
-      <TouchableOpacity
-        style={styles.buttonReport}
-        onPress={handleReportProblem}
-      >
-        <Text style={styles.buttonText}>Reportar Problema</Text>
-      </TouchableOpacity>
-
-      {/* Excluir Conta */}
-      <TouchableOpacity style={[styles.button, styles.deleteButton]}>
-        <Text style={styles.buttonText}>Excluir Conta</Text>
-      </TouchableOpacity>
-
-      {/* Botão de Logout */}
-      <TouchableOpacity
-        style={[styles.button, styles.deleteButton]}
-        onPress={handleLogout}
-      >
-        <Text style={styles.buttonText}>Sair</Text>
-      </TouchableOpacity>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  gradient: {
     flex: 1,
-    alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f5f5f5",
+    alignItems: "center",
+  },
+  container: {
+    width: "90%",
+    maxWidth: 400,
+    padding: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.9)",
+    borderRadius: 10,
+    alignItems: "center",
   },
   header: {
     fontSize: 24,
@@ -112,9 +110,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     color: "#333",
   },
-  pickerContainer: {
+  pickerWrapper: {
     width: "90%",
     marginBottom: 20,
+  },
+  pickerContainer: {
+    backgroundColor: "#b9b7b7",
+    borderRadius: 10,
+    borderColor: "#4b4b4b",
+    borderWidth: 1,
   },
   label: {
     fontSize: 16,
@@ -124,8 +128,6 @@ const styles = StyleSheet.create({
   picker: {
     height: 50,
     width: "100%",
-    backgroundColor: "#eee",
-    borderRadius: 8,
   },
   button: {
     width: "90%",

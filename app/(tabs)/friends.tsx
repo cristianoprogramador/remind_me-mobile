@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  TextInput,
   Image,
   FlatList,
   Button,
@@ -14,7 +13,8 @@ import {
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
-import { Friend, Friendship, UserProps } from "@/types";
+import { Friend, Friendship } from "@/types";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function FriendsPage() {
   const [receivedRequests, setReceivedRequests] = useState<Friend[]>([]);
@@ -46,8 +46,23 @@ export default function FriendsPage() {
       }
 
       const { receivedRequests, sentRequests } = await res.json();
-      setReceivedRequests(receivedRequests);
-      setSentRequests(sentRequests);
+
+      const mappedReceivedRequests = receivedRequests.map((request: any) => ({
+        uuid: request.uuid,
+        name: request.user1.name,
+        email: request.user1.email,
+        profileImageUrl: request.user1.profileImageUrl,
+      }));
+
+      const mappedSentRequests = sentRequests.map((request: any) => ({
+        uuid: request.uuid,
+        name: request.user2.name,
+        email: request.user2.email,
+        profileImageUrl: request.user2.profileImageUrl,
+      }));
+
+      setReceivedRequests(mappedReceivedRequests);
+      setSentRequests(mappedSentRequests);
     } catch (error) {
       console.error(error);
     } finally {
@@ -72,8 +87,18 @@ export default function FriendsPage() {
         throw new Error("Failed to fetch friends");
       }
 
-      const data = await res.json();
-      setFriends(data);
+      const data: Friendship[] = await res.json();
+
+      const userString = await AsyncStorage.getItem("user");
+      const user = userString ? JSON.parse(userString) : null;
+
+      const friendsList = data.map((friendship) => {
+        return friendship.user1.uuid === user.uuid
+          ? friendship.user2
+          : friendship.user1;
+      });
+
+      setFriends(friendsList);
     } catch (error) {
       console.error(error);
     } finally {
@@ -154,7 +179,38 @@ export default function FriendsPage() {
     );
   }
 
-  const renderFriend = ({ item }: { item: Friend }) => (
+  const renderRequestItem = ({ item }: { item: Friend }) => (
+    <View style={styles.requestContainer}>
+      <View style={{ flex: 1 }}>
+      <Text style={styles.friendName}>{item.name}</Text>
+      <Text style={styles.friendEmail}>{item.email}</Text>
+      </View>
+      <View style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+        <Button
+          title="Aceitar"
+          color="#079e14"
+          onPress={() => handleResponse(item.uuid, true)}
+        />
+        <Button
+          title="Rejeitar"
+          color="#ff5c5c"
+          onPress={() => handleResponse(item.uuid, false)}
+        />
+      </View>
+    </View>
+  );
+
+  const renderSentRequestItem = ({ item }: { item: Friend }) => (
+    <View style={styles.requestContainer}>
+      <View style={{ flex: 1 }}>
+      <Text style={styles.friendName}>{item.name}</Text>
+      <Text style={styles.friendEmail}>{item.email}</Text>
+      </View>
+      <Text>Aguardando resposta...</Text>
+    </View>
+  );
+
+  const renderFriendItem = ({ item }: { item: Friend }) => (
     <View style={styles.friendContainer}>
       {item.profileImageUrl ? (
         <Image
@@ -162,7 +218,9 @@ export default function FriendsPage() {
           style={styles.profileImage}
         />
       ) : (
-        <FontAwesome name="user" size={48} color="gray" />
+        <View style={{ marginRight: 20 }}>
+          <FontAwesome name="user" size={48} color="gray" />
+        </View>
       )}
       <View style={{ flex: 1 }}>
         <Text style={styles.friendName}>{item.name}</Text>
@@ -177,64 +235,57 @@ export default function FriendsPage() {
   );
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Amigos</Text>
-
-      <FlatList
-        data={friends}
-        renderItem={renderFriend}
-        keyExtractor={(item) => item.uuid}
-        ListHeaderComponent={
+    <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
+      <View style={styles.container}>
+        {/* Solicitações de Amizade Recebidas */}
+        {receivedRequests.length > 0 && (
           <>
-            {/* <SearchFriend /> */}
             <Text style={styles.subtitle}>
               Solicitações de Amizade Recebidas
             </Text>
             <FlatList
               data={receivedRequests}
-              renderItem={({ item }) => (
-                <View style={styles.requestContainer}>
-                  <Text>{item.name}</Text>
-                  <Button
-                    title="Aceitar"
-                    onPress={() => handleResponse(item.uuid, true)}
-                  />
-                  <Button
-                    title="Rejeitar"
-                    onPress={() => handleResponse(item.uuid, false)}
-                  />
-                </View>
-              )}
+              renderItem={renderRequestItem}
               keyExtractor={(item) => item.uuid}
-              horizontal
             />
+          </>
+        )}
+
+        {/* Solicitações de Amizade Enviadas */}
+        {sentRequests.length > 0 && (
+          <>
             <Text style={styles.subtitle}>
               Solicitações de Amizade Enviadas
             </Text>
             <FlatList
               data={sentRequests}
-              renderItem={({ item }: { item: Friend }) => (
-                <View style={styles.requestContainer}>
-                  <Text>{item.name}</Text>
-                  <Text>Aguardando resposta...</Text>
-                </View>
-              )}
+              renderItem={renderSentRequestItem}
               keyExtractor={(item) => item.uuid}
-              horizontal
             />
           </>
-        }
-      />
-    </View>
+        )}
+
+        {/* Lista de Amigos */}
+        <Text style={styles.title}>Lista de Amigos</Text>
+        <FlatList
+          data={friends}
+          renderItem={renderFriendItem}
+          keyExtractor={(item) => item.uuid}
+        />
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  gradient: {
     flex: 1,
+    justifyContent: "flex-start",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#f5f5f5",
+  },
+  container: {
+    width: "90%",
+    paddingTop: 60,
   },
   center: {
     flex: 1,
@@ -244,26 +295,39 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: "bold",
+    color: "#FFFFFF",
     marginBottom: 10,
-    marginTop: 40,
+    marginTop: 10,
+    textAlign: "center",
   },
   subtitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginTop: 20,
+    color: "#FFFFFF",
+    marginVertical: 10,
+  },
+  requestContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 10,
+    marginVertical: 5,
+    backgroundColor: "#FFF",
+    borderRadius: 8,
+    flex: 1,
   },
   friendContainer: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
     marginVertical: 5,
-    backgroundColor: "#fff",
-    borderRadius: 5,
+    backgroundColor: "#FFF",
+    borderRadius: 8,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 1,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   profileImage: {
     width: 48,
@@ -276,16 +340,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
   },
   friendEmail: {
-    fontSize: 14,
-    color: "black",
-  },
-  requestContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 10,
-    backgroundColor: "#fff",
-    borderRadius: 5,
-    marginHorizontal: 5,
-    marginBottom: 10,
+    fontSize: 12,
+    color: "#666",
   },
 });

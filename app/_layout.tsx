@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { StatusBar } from "expo-status-bar";
 
 export default function RootLayout() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -30,16 +31,19 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      {!isAuthenticated ? (
-        <Stack.Screen name="(auth)" />
-      ) : (
-        <Stack.Screen name="(tabs)" />
-      )}
-    </Stack>
+    <>
+      <StatusBar style="light" />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        {!isAuthenticated ? (
+          <Stack.Screen name="(auth)" />
+        ) : (
+          <Stack.Screen name="(tabs)" />
+        )}
+      </Stack>
+    </>
   );
 }
