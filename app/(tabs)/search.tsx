@@ -1,102 +1,243 @@
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { StyleSheet, Image, Platform } from 'react-native';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { RemindList } from "@/components/Remind/remindList";
+// import { SearchRemind } from "@/components/Remind/searchRemind";
+import { Annotation } from "@/types";
+import { Pagination } from "@/components/Pagination";
+import { LinearGradient } from "expo-linear-gradient";
+import FontAwesome from "react-native-vector-icons/FontAwesome";
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+export default function SearchPage() {
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
 
-export default function TabTwoScreen() {
+  const fetchAnnotations = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(
+        `http://192.168.15.72:3333/annotations/search?query=${searchQuery}&categoryId=${categoryId}&page=${page}&limit=${limit}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch annotations");
+      }
+
+      const { annotations, totalCount } = await res.json();
+      setAnnotations(annotations);
+      setTotalCount(totalCount);
+    } catch (error) {
+      console.error("Error fetching annotations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnnotations();
+  }, [page, limit, searchQuery, categoryId]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleSearch = (query: string, categoryId: string | null) => {
+    setSearchQuery(query);
+    setCategoryId(categoryId);
+    setPage(1);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
+
+  const renderAnnotations = ({ item }: { item: Annotation }) => {
+    const handleShowCategory = () => {
+      if (item.category) {
+        Alert.alert("Categoria", item.category.name);
+      } else {
+        Alert.alert("Sem categoria", "Esta anotação não tem uma categoria.");
+      }
+    };
+
+    const handleShowAuthor = () => {
+      Alert.alert("Criador", `Autor: ${item.author.name}`);
+    };
+
+    const handleShowRelatedUsers = () => {
+      if (item.relatedUsers && item.relatedUsers.length > 0) {
+        const userNames = item.relatedUsers
+          .map((user) => user.user.name)
+          .join(", ");
+        Alert.alert("Participantes", `Usuários relacionados: ${userNames}`);
+      } else {
+        Alert.alert(
+          "Sem participantes",
+          "Esta anotação não tem participantes."
+        );
+      }
+    };
+
+    return (
+      <View style={styles.requestContainer}>
+        <View style={styles.schedules}>
+          <View style={styles.dateContainer}>
+            <Text style={styles.label}>Criado em:</Text>
+            <Text style={styles.dateText}>
+              {formatDateTime(item.createdAt)}
+            </Text>
+          </View>
+          <View style={styles.dateContainer}>
+            <Text style={styles.label}>Lembrar em:</Text>
+            <Text style={styles.remindText}>
+              {formatDateTime(item.remindAt)}
+            </Text>
+          </View>
+        </View>
+        <View>
+          <Text style={styles.contentText}>{item.content}</Text>
+        </View>
+        <View style={styles.iconContainer}>
+          <TouchableOpacity onPress={handleShowCategory}>
+            <FontAwesome name="tags" size={15} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleShowAuthor}>
+            <FontAwesome name="user" size={15} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleShowRelatedUsers}>
+            <FontAwesome name="users" size={15} color="#000" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={<Ionicons size={310} name="code-slash" style={styles.headerImage} />}>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user's current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText> library
-          to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Buscar Lembrete</Text>
+        {/* <SearchRemind onSearch={handleSearch} /> */}
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#ffffff" />
+        ) : (
+          <>
+            {/* <RemindList
+            annotations={annotations}
+            fetchAnnotations={fetchAnnotations}
+          /> */}
+            <FlatList
+              data={annotations}
+              renderItem={renderAnnotations}
+              keyExtractor={(item) => item.uuid}
+            />
+            <Pagination
+              totalCount={totalCount}
+              currentPage={page}
+              pageSize={limit}
+              onPageChange={handlePageChange}
+            />
+          </>
+        )}
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  gradient: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
   },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
+  container: {
+    width: "90%",
+    paddingTop: 60,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 10,
+    marginTop: 10,
+    textAlign: "center",
+  },
+  schedules: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    flex: 1,
+  },
+  requestContainer: {
+    marginBottom: 15,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#f9f9f9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    gap: 2,
+    alignItems: "center",
+  },
+  label: {
+    fontSize: 12,
+    color: "#666666",
+  },
+  dateText: {
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  remindText: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  contentText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 10,
+  },
+  iconContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 10,
+    gap: 20,
   },
 });

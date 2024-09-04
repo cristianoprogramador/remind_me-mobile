@@ -15,6 +15,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { FontAwesome } from "@expo/vector-icons";
 import { Friend, Friendship } from "@/types";
 import { LinearGradient } from "expo-linear-gradient";
+import { SearchFriend } from "@/components/SearchFriend";
 
 export default function FriendsPage() {
   const [receivedRequests, setReceivedRequests] = useState<Friend[]>([]);
@@ -182,8 +183,8 @@ export default function FriendsPage() {
   const renderRequestItem = ({ item }: { item: Friend }) => (
     <View style={styles.requestContainer}>
       <View style={{ flex: 1 }}>
-      <Text style={styles.friendName}>{item.name}</Text>
-      <Text style={styles.friendEmail}>{item.email}</Text>
+        <Text style={styles.friendName}>{item.name}</Text>
+        <Text style={styles.friendEmail}>{item.email}</Text>
       </View>
       <View style={{ display: "flex", flexDirection: "column", gap: 3 }}>
         <Button
@@ -203,8 +204,8 @@ export default function FriendsPage() {
   const renderSentRequestItem = ({ item }: { item: Friend }) => (
     <View style={styles.requestContainer}>
       <View style={{ flex: 1 }}>
-      <Text style={styles.friendName}>{item.name}</Text>
-      <Text style={styles.friendEmail}>{item.email}</Text>
+        <Text style={styles.friendName}>{item.name}</Text>
+        <Text style={styles.friendEmail}>{item.email}</Text>
       </View>
       <Text>Aguardando resposta...</Text>
     </View>
@@ -237,6 +238,7 @@ export default function FriendsPage() {
   return (
     <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
       <View style={styles.container}>
+        <SearchFriend />
         {/* Solicitações de Amizade Recebidas */}
         {receivedRequests.length > 0 && (
           <>
