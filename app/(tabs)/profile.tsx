@@ -193,10 +193,12 @@ export default function ProfileScreen() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading...</Text>
-      </View>
+      <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text style={{color: "#fffF"}}>Loading...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 
@@ -240,26 +242,10 @@ export default function ProfileScreen() {
                 style={styles.picker}
                 onValueChange={(itemValue) => setCountryCode(itemValue)}
               >
-                <Picker.Item
-                  style={{ fontSize: 14 }}
-                  label="+1"
-                  value="+1"
-                />
-                <Picker.Item
-                  style={{ fontSize: 14 }}
-                  label="+44"
-                  value="+44"
-                />
-                <Picker.Item
-                  style={{ fontSize: 14 }}
-                  label="+55"
-                  value="+55"
-                />
-                <Picker.Item
-                  style={{ fontSize: 14 }}
-                  label="+91"
-                  value="+91"
-                />
+                <Picker.Item style={{ fontSize: 14 }} label="+1" value="+1" />
+                <Picker.Item style={{ fontSize: 14 }} label="+44" value="+44" />
+                <Picker.Item style={{ fontSize: 14 }} label="+55" value="+55" />
+                <Picker.Item style={{ fontSize: 14 }} label="+91" value="+91" />
               </Picker>
               <TextInput
                 style={styles.inputPhone}

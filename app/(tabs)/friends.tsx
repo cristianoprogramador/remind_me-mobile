@@ -173,10 +173,12 @@ export default function FriendsPage() {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading...</Text>
-      </View>
+      <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#0000ff" />
+          <Text style={{color: "#fffF"}}>Loading...</Text>
+        </View>
+      </LinearGradient>
     );
   }
 

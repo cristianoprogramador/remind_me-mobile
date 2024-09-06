@@ -9,12 +9,11 @@ import {
   Alert,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { RemindList } from "@/components/Remind/remindList";
-// import { SearchRemind } from "@/components/Remind/searchRemind";
 import { Annotation } from "@/types";
 import { Pagination } from "@/components/Pagination";
 import { LinearGradient } from "expo-linear-gradient";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
+import { SearchRemind } from "@/components/SearchRemind";
 
 export default function SearchPage() {
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
@@ -113,19 +112,24 @@ export default function SearchPage() {
 
     return (
       <View style={styles.requestContainer}>
-        <View style={styles.schedules}>
-          <View style={styles.dateContainer}>
-            <Text style={styles.label}>Criado em:</Text>
-            <Text style={styles.dateText}>
-              {formatDateTime(item.createdAt)}
-            </Text>
+        <View style={{display: "flex", flexDirection: "row"}}>
+          <View style={styles.schedules}>
+            <View style={styles.dateContainer}>
+              <Text style={styles.label}>Criado em:</Text>
+              <Text style={styles.dateText}>
+                {formatDateTime(item.createdAt)}
+              </Text>
+            </View>
+            <View style={styles.dateContainer}>
+              <Text style={styles.label}>Lembrar em:</Text>
+              <Text style={styles.remindText}>
+                {formatDateTime(item.remindAt)}
+              </Text>
+            </View>
           </View>
-          <View style={styles.dateContainer}>
-            <Text style={styles.label}>Lembrar em:</Text>
-            <Text style={styles.remindText}>
-              {formatDateTime(item.remindAt)}
-            </Text>
-          </View>
+          <TouchableOpacity onPress={handleShowCategory}>
+            <FontAwesome name="edit" size={20} color="#000" />
+          </TouchableOpacity>
         </View>
         <View>
           <Text style={styles.contentText}>{item.content}</Text>
@@ -149,16 +153,12 @@ export default function SearchPage() {
     <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
       <View style={styles.container}>
         <Text style={styles.title}>Buscar Lembrete</Text>
-        {/* <SearchRemind onSearch={handleSearch} /> */}
+        <SearchRemind onSearch={handleSearch} />
 
         {loading ? (
           <ActivityIndicator size="large" color="#ffffff" />
         ) : (
           <>
-            {/* <RemindList
-            annotations={annotations}
-            fetchAnnotations={fetchAnnotations}
-          /> */}
             <FlatList
               data={annotations}
               renderItem={renderAnnotations}

@@ -1,71 +1,249 @@
 // app\(tabs)\index.tsx
-
-import { Image, StyleSheet, Platform } from 'react-native';
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Annotation } from "@/types";
+import { Pagination } from "@/components/Pagination";
+import { LinearGradient } from "expo-linear-gradient";
+import FontAwesome from "react-native-vector-icons/FontAwesome";
+import { SearchRemind } from "@/components/SearchRemind";
+import CreateRemind from "@/components/CreateRemind";
 
 export default function HomeScreen() {
+  const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(5);
+  const [totalCount, setTotalCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+
+  const fetchAnnotations = async () => {
+    setLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("access_token");
+      if (!token) return;
+
+      const res = await fetch(
+        `http://192.168.15.72:3333/annotations/search?query=${searchQuery}&categoryId=${categoryId}&page=${page}&limit=${limit}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch annotations");
+      }
+
+      const { annotations, totalCount } = await res.json();
+      setAnnotations(annotations);
+      setTotalCount(totalCount);
+    } catch (error) {
+      console.error("Error fetching annotations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnnotations();
+  }, [page, limit, searchQuery, categoryId]);
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleSearch = (query: string, categoryId: string | null) => {
+    setSearchQuery(query);
+    setCategoryId(categoryId);
+    setPage(1);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+
+    return new Intl.DateTimeFormat("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(date);
+  };
+
+  const renderAnnotations = ({ item }: { item: Annotation }) => {
+    const handleShowCategory = () => {
+      if (item.category) {
+        Alert.alert("Categoria", item.category.name);
+      } else {
+        Alert.alert("Sem categoria", "Esta anotação não tem uma categoria.");
+      }
+    };
+
+    const handleShowAuthor = () => {
+      Alert.alert("Criador", `Autor: ${item.author.name}`);
+    };
+
+    const handleShowRelatedUsers = () => {
+      if (item.relatedUsers && item.relatedUsers.length > 0) {
+        const userNames = item.relatedUsers
+          .map((user) => user.user.name)
+          .join(", ");
+        Alert.alert("Participantes", `Usuários relacionados: ${userNames}`);
+      } else {
+        Alert.alert(
+          "Sem participantes",
+          "Esta anotação não tem participantes."
+        );
+      }
+    };
+
+    return (
+      <View style={styles.requestContainer}>
+        <View style={{display: "flex", flexDirection: "row"}}>
+          <View style={styles.schedules}>
+            <View style={styles.dateContainer}>
+              <Text style={styles.label}>Criado em:</Text>
+              <Text style={styles.dateText}>
+                {formatDateTime(item.createdAt)}
+              </Text>
+            </View>
+            <View style={styles.dateContainer}>
+              <Text style={styles.label}>Lembrar em:</Text>
+              <Text style={styles.remindText}>
+                {formatDateTime(item.remindAt)}
+              </Text>
+            </View>
+          </View>
+          <TouchableOpacity onPress={handleShowCategory}>
+            <FontAwesome name="edit" size={20} color="#000" />
+          </TouchableOpacity>
+        </View>
+        <View>
+          <Text style={styles.contentText}>{item.content}</Text>
+        </View>
+        <View style={styles.iconContainer}>
+          <TouchableOpacity onPress={handleShowCategory}>
+            <FontAwesome name="tags" size={15} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleShowAuthor}>
+            <FontAwesome name="user" size={15} color="#000" />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={handleShowRelatedUsers}>
+            <FontAwesome name="users" size={15} color="#000" />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const addAnnotation = (newAnnotation: Annotation) => {
+    setAnnotations((prevAnnotations) => [newAnnotation, ...prevAnnotations]);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
+      <View style={styles.container}>
+        <Text style={styles.title}>Próximos Lembretes</Text>
+        <CreateRemind onCreate={addAnnotation} />
+
+        {loading ? (
+          <ActivityIndicator size="large" color="#ffffff" />
+        ) : (
+          <>
+            <FlatList
+              data={annotations}
+              renderItem={renderAnnotations}
+              keyExtractor={(item) => item.uuid}
+            />
+            <Pagination
+              totalCount={totalCount}
+              currentPage={page}
+              pageSize={limit}
+              onPageChange={handlePageChange}
+            />
+          </>
+        )}
+      </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  gradient: {
+    flex: 1,
+    justifyContent: "flex-start",
+    alignItems: "center",
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  container: {
+    width: "90%",
+    paddingTop: 60,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginBottom: 10,
+    marginTop: 10,
+    textAlign: "center",
+  },
+  schedules: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    flex: 1,
+  },
+  requestContainer: {
+    marginBottom: 15,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: "#f9f9f9",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  dateContainer: {
+    flexDirection: "row",
+    gap: 2,
+    alignItems: "center",
+  },
+  label: {
+    fontSize: 12,
+    color: "#666666",
+  },
+  dateText: {
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  remindText: {
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  contentText: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginTop: 10,
+  },
+  iconContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    marginTop: 10,
+    gap: 20,
   },
 });
