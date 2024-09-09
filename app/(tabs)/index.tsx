@@ -14,7 +14,6 @@ import { Annotation } from "@/types";
 import { Pagination } from "@/components/Pagination";
 import { LinearGradient } from "expo-linear-gradient";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
-import { SearchRemind } from "@/components/SearchRemind";
 import CreateRemind from "@/components/CreateRemind";
 
 export default function HomeScreen() {
@@ -25,6 +24,7 @@ export default function HomeScreen() {
   const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [showCreateRemind, setShowCreateRemind] = useState(false);
 
   const fetchAnnotations = async () => {
     setLoading(true);
@@ -63,12 +63,6 @@ export default function HomeScreen() {
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage);
-  };
-
-  const handleSearch = (query: string, categoryId: string | null) => {
-    setSearchQuery(query);
-    setCategoryId(categoryId);
-    setPage(1);
   };
 
   const formatDateTime = (dateString: string) => {
@@ -114,7 +108,7 @@ export default function HomeScreen() {
 
     return (
       <View style={styles.requestContainer}>
-        <View style={{display: "flex", flexDirection: "row"}}>
+        <View style={{ display: "flex", flexDirection: "row" }}>
           <View style={styles.schedules}>
             <View style={styles.dateContainer}>
               <Text style={styles.label}>Criado em:</Text>
@@ -137,15 +131,19 @@ export default function HomeScreen() {
           <Text style={styles.contentText}>{item.content}</Text>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity onPress={handleShowCategory}>
-            <FontAwesome name="tags" size={15} color="#000" />
-          </TouchableOpacity>
+          {item.category && (
+            <TouchableOpacity onPress={handleShowCategory}>
+              <FontAwesome name="tags" size={15} color="#000" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={handleShowAuthor}>
             <FontAwesome name="user" size={15} color="#000" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleShowRelatedUsers}>
-            <FontAwesome name="users" size={15} color="#000" />
-          </TouchableOpacity>
+          {item.relatedUsers && item.relatedUsers.length > 0 && (
+            <TouchableOpacity onPress={handleShowRelatedUsers}>
+              <FontAwesome name="users" size={15} color="#000" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -159,7 +157,19 @@ export default function HomeScreen() {
     <LinearGradient colors={["#0F172A", "#334155"]} style={styles.gradient}>
       <View style={styles.container}>
         <Text style={styles.title}>Próximos Lembretes</Text>
-        <CreateRemind onCreate={addAnnotation} />
+        <TouchableOpacity
+          style={[
+            styles.createButton,
+            showCreateRemind ? styles.cancelButton : styles.createButton,
+          ]}
+          onPress={() => setShowCreateRemind(!showCreateRemind)}
+        >
+          <Text style={styles.createButtonText}>
+            {showCreateRemind ? "Cancelar" : "Criar Lembrete"}
+          </Text>
+        </TouchableOpacity>
+
+        {showCreateRemind && <CreateRemind onCreate={addAnnotation} />}
 
         {loading ? (
           <ActivityIndicator size="large" color="#ffffff" />
@@ -169,6 +179,7 @@ export default function HomeScreen() {
               data={annotations}
               renderItem={renderAnnotations}
               keyExtractor={(item) => item.uuid}
+              contentContainerStyle={styles.listContent}
             />
             <Pagination
               totalCount={totalCount}
@@ -191,7 +202,9 @@ const styles = StyleSheet.create({
   },
   container: {
     width: "90%",
+    flex: 1,
     paddingTop: 60,
+    paddingBottom: 10,
   },
   title: {
     fontSize: 24,
@@ -245,5 +258,25 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     marginTop: 10,
     gap: 20,
+  },
+  listContent: {
+    paddingBottom: 16,
+  },
+  createButton: {
+    backgroundColor: "#1E90FF",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  cancelButton: {
+    backgroundColor: "#ff0000",
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  createButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });

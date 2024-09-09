@@ -12,6 +12,7 @@ import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { CategoryOption, Annotation } from "@/types";
 import CategorySelect from "@/components/CategorySelect";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import UserSelect from "./UserSelect";
 
 interface CreateRemindProps {
   onCreate: (newAnnotation: Annotation) => void;
@@ -24,6 +25,7 @@ export default function CreateRemind({ onCreate }: CreateRemindProps) {
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryOption | null>(null);
   const [fixedUserId, setFixedUserId] = useState<string | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchUserId = async () => {
@@ -44,14 +46,16 @@ export default function CreateRemind({ onCreate }: CreateRemindProps) {
 
   const handleCreateAnnotation = async () => {
     if (!content || !remindAt) {
-      Alert.alert(
-        "Atenção",
-        "Por favor, preencha todos os campos obrigatórios."
-      );
+      Alert.alert("Atenção", "Por favor, preencha todos os campos obrigatórios.");
       return;
     }
 
-    const remindAtUTC = remindAt.toISOString();
+    const remindAtCopy = new Date(remindAt);
+    remindAtCopy.setMinutes(0);
+    remindAtCopy.setSeconds(0);
+    remindAtCopy.setMilliseconds(0);
+
+    const remindAtUTC = remindAtCopy.toISOString();
 
     try {
       const token = await AsyncStorage.getItem("access_token");
@@ -143,6 +147,12 @@ export default function CreateRemind({ onCreate }: CreateRemindProps) {
     return `${date.getHours()}:00`;
   };
 
+  const handleUserChange = (ids: string[]) => {
+    setSelectedUserIds(ids);
+  };
+
+  const numberOfOtherParticipants = selectedUserIds.length - 1;
+
   return (
     <View style={styles.container}>
       <TextInput
@@ -168,11 +178,21 @@ export default function CreateRemind({ onCreate }: CreateRemindProps) {
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={styles.datePickerButton}
+          style={styles.datePickerButtonHour}
           onPress={showTimePicker}
         >
           <Text style={styles.datePickerText}>
             {remindAt ? formatTime(remindAt) : "Escolha uma hora"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={() => setModalVisible(true)}
+          style={styles.datePickerButtonHour}
+        >
+          <Text style={styles.participantText}>
+            Você
+            {numberOfOtherParticipants > 0 && ` +${numberOfOtherParticipants}`}
           </Text>
         </TouchableOpacity>
       </View>
@@ -180,6 +200,14 @@ export default function CreateRemind({ onCreate }: CreateRemindProps) {
       <CategorySelect
         selectedCategory={selectedCategory}
         onChange={setSelectedCategory}
+      />
+
+      <UserSelect
+        selectedUserIds={selectedUserIds}
+        onChange={handleUserChange}
+        fixedUserId={fixedUserId}
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
       />
 
       <View style={styles.buttonContainer}>
@@ -195,6 +223,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F8F8",
     borderRadius: 10,
     marginBottom: 20,
+  },
+  participantText: {
+    fontSize: 16,
   },
   textArea: {
     borderColor: "#DDD",
@@ -224,12 +255,25 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
     flex: 1,
     marginRight: 10,
+    alignItems: "center",
+    textAlign: "center",
+  },
+  datePickerButtonHour: {
+    borderWidth: 1,
+    borderColor: "#DDD",
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: "#FFF",
+    width: 90,
+    marginRight: 10,
+    alignItems: "center",
+    textAlign: "center",
   },
   datePickerText: {
     fontSize: 16,
     color: "#333",
   },
   buttonContainer: {
-    marginTop: 20,
+    marginTop: 5,
   },
 });

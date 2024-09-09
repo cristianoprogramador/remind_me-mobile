@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "remind_me-mobile",
-    "slug": "remind_me-mobile",
+    "slug": "remind-me",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -31,6 +31,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "c6c23762-3adb-46c1-9cf5-4400b55287ea"
+      }
+    },
+    "owner": "cristiano_dev"
   }
 }

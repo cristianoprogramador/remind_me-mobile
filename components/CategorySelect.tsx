@@ -158,11 +158,13 @@ export default function CategorySelect({
             style={{ marginHorizontal: 10 }}
           />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => setModalVisible(true)}
-        >
-          <Text style={styles.createButtonText}>Criar Categoria</Text>
+        <TouchableOpacity onPress={() => setModalVisible(true)}>
+          <FontAwesome
+            name="plus"
+            size={20}
+            color="#00ac39"
+            style={{ marginHorizontal: 10 }}
+          />
         </TouchableOpacity>
       </View>
 
@@ -183,12 +185,12 @@ export default function CategorySelect({
               style={styles.input}
             />
             <View style={styles.modalButtons}>
-              <Button title="Criar" onPress={handleCreateCategory} />
               <Button
                 title="Cancelar"
                 color="red"
                 onPress={() => setModalVisible(false)}
               />
+              <Button title="Criar" onPress={handleCreateCategory} />
             </View>
           </View>
         </View>
@@ -199,7 +201,7 @@ export default function CategorySelect({
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 20,
+    marginVertical: 10,
   },
   categoryContainer: {
     flexDirection: "row",

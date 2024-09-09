@@ -112,7 +112,7 @@ export default function SearchPage() {
 
     return (
       <View style={styles.requestContainer}>
-        <View style={{display: "flex", flexDirection: "row"}}>
+        <View style={{ display: "flex", flexDirection: "row" }}>
           <View style={styles.schedules}>
             <View style={styles.dateContainer}>
               <Text style={styles.label}>Criado em:</Text>
@@ -135,15 +135,19 @@ export default function SearchPage() {
           <Text style={styles.contentText}>{item.content}</Text>
         </View>
         <View style={styles.iconContainer}>
-          <TouchableOpacity onPress={handleShowCategory}>
-            <FontAwesome name="tags" size={15} color="#000" />
-          </TouchableOpacity>
+          {item.category && (
+            <TouchableOpacity onPress={handleShowCategory}>
+              <FontAwesome name="tags" size={15} color="#000" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity onPress={handleShowAuthor}>
             <FontAwesome name="user" size={15} color="#000" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={handleShowRelatedUsers}>
-            <FontAwesome name="users" size={15} color="#000" />
-          </TouchableOpacity>
+          {item.relatedUsers && item.relatedUsers.length > 0 && (
+            <TouchableOpacity onPress={handleShowRelatedUsers}>
+              <FontAwesome name="users" size={15} color="#000" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
