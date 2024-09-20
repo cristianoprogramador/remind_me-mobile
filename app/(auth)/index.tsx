@@ -1,5 +1,3 @@
-// app/(auth)/index.tsx
-
 import React, { useState } from "react";
 import {
   Text,
@@ -13,11 +11,32 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { LinearGradient } from "expo-linear-gradient";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
+import * as AuthSession from "expo-auth-session";
+import * as WebBrowser from "expo-web-browser";
+
+WebBrowser.maybeCompleteAuthSession();
+
+const googleDiscovery = {
+  authorizationEndpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+  tokenEndpoint: "https://oauth2.googleapis.com/token",
+  revocationEndpoint: "https://oauth2.googleapis.com/revoke",
+};
 
 export default function LoginScreen() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  const [request, response, promptAsync] = AuthSession.useAuthRequest(
+    {
+      clientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
+      scopes: ["openid", "profile", "email"],
+      redirectUri: AuthSession.makeRedirectUri({
+        useProxy: true,
+      }),
+    },
+    googleDiscovery
+  );
 
   const handleLogin = async () => {
     try {
@@ -41,6 +60,36 @@ export default function LoginScreen() {
     } catch (error) {
       console.error(error);
       Alert.alert("Erro", "Algo deu errado. Tente novamente.");
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    const result = await promptAsync();
+    if (result.type === "success") {
+      const { id_token } = result.params;
+
+      const response = await fetch(
+        "http://192.168.15.72:3333/auth/google-login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ token: id_token }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (response.ok) {
+        await AsyncStorage.setItem("access_token", data.access_token);
+        await AsyncStorage.setItem("user", JSON.stringify(data.user));
+        router.replace("/(tabs)");
+      } else {
+        Alert.alert("Erro", "Falha no login com Google");
+      }
+    } else {
+      Alert.alert("Erro", "Autenticação cancelada.");
     }
   };
 
@@ -82,7 +131,10 @@ export default function LoginScreen() {
             <FontAwesome name="github" size={24} color="white" />
             <Text style={styles.socialButtonText}>GitHub</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.socialButtonGoogle}>
+          <TouchableOpacity
+            style={styles.socialButtonGoogle}
+            onPress={handleGoogleLogin}
+          >
             <FontAwesome name="google" size={24} color="white" />
             <Text style={styles.socialButtonText}>Google</Text>
           </TouchableOpacity>

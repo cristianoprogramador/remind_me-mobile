@@ -289,7 +289,9 @@ const styles = StyleSheet.create({
   },
   container: {
     width: "90%",
+    flex: 1,
     paddingTop: 60,
+    paddingBottom: 10,
   },
   center: {
     flex: 1,
